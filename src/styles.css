@@ -1,3 +1,51 @@
+/* 分割线样式 */
+hr {
+    border-top-style: dashed !important;
+}
+
+/* 引用样式 */
+blockquote {
+    line-height: 200%;
+}
+
+/* 表格 */
+table {
+    tr {
+
+        th,
+        td {
+            /*text-align: center;*/
+            vertical-align: middle !important;
+            height: 100%;
+            border: 1px solid black !important;
+        }
+    }
+}
+
+body {
+    --heading-spacing: calc(var(--p-spacing) * 1.5);
+    margin: auto 10%;
+}
+
+
 h3 {
-    border: 1px solid red;
+    font-size: 22px;
+}
+h4 {
+    font-size: 20px;
+}
+h5 {
+    font-size: 18px;
+}
+h6 {
+    font-size: 16px;
+}
+
+/* 下划线样式 */
+u {
+    text-underline-offset: 4px; /* 下划线偏移距离 */
+}
+
+a {
+    text-decoration: none; /* 去除下划线 */
 }
