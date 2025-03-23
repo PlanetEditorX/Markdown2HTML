@@ -34,21 +34,25 @@ def find_absolute_path(path):
         return list(root_folder.glob(f"**/{path}"))[0]._raw_path
     return path
 
-# 替换函数
+# 替换图片路径
 def replace_with_img(match):
     path = match.group(1)  # 图片路径
     path = find_absolute_path(path)
     try:
-        optional_part = match.group(3)  # 可选的 |L 或 |R
+        align = match.group(2)  # L 或 R
+        width = match.group(3)  # 宽度
     except IndexError:
-        optional_part = ''
+        align = ''
+        width = ''
     img_tag = f'<img src="{path}" alt="Image"'
-    if optional_part:
+    if align:
         # 如果有 |L 或 |R，可以添加对应的 CSS 类
-        if optional_part == '|L':
+        if align == 'L':
             img_tag += ' class="align-left"'
-        elif optional_part == '|R':
+        elif align == 'R':
             img_tag += ' class="align-right"'
+    if width:
+        img_tag += f' width="{width}"'
     img_tag += '>'
     return img_tag
 
@@ -58,7 +62,9 @@ def content_convert(text, path):
     text = re.sub(f".md", ".html", text)
     # 转换Markdown到HTML
     html = markdown.markdown(text)
-    pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
+    # pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
+    pattern = r'!\[\[(assets/[^|]+)\|([A-Z])\|(\d+)\]\]'
+
     # 替换所有匹配的内容
     html = re.sub(pattern, replace_with_img, html).replace('target="_blank"', '')
     write_file(html, f"{path}.html")
