@@ -22,23 +22,29 @@ table {
     }
 }
 
+:root {
+    font-size: 16px; /* 定义根字号（1rem = 16px） */
+}
+
 body {
     --heading-spacing: calc(var(--p-spacing) * 1.5);
     margin: auto 10%;
+    font-size: 1rem; /* 继承根字号 */
+    line-height: 1.1rem;
 }
 
 
 h3 {
-    font-size: 22px;
+    font-size: 1.8rem;
 }
 h4 {
-    font-size: 20px;
+    font-size: 1.6rem;
 }
 h5 {
-    font-size: 18px;
+    font-size: 1.4rem;
 }
 h6 {
-    font-size: 16px;
+    font-size: 1.2rem;
 }
 
 /* 下划线样式 */
@@ -46,6 +52,9 @@ u {
     text-underline-offset: 4px; /* 下划线偏移距离 */
 }
 
+ul {
+    line-height: 180%;
+}
 a {
     text-decoration: none; /* 去除下划线 */
 }
