@@ -1,13 +1,22 @@
 import os
 import re
+import shutil
 import markdown
 from pathlib import Path
 
 root_folder = '' # 当前目录
+css_path = ''
+css_file = ''
 
 # 递归遍历目录树
 def deep_directory(path, _type='md'):
+    global css_file
     if _type == 'md':
+        for entry in os.scandir(path):
+            if entry.is_dir():
+                print(f"[文件夹] {entry.name}")
+                shutil.copy(css_path, entry)
+                css_file = entry.path + "\\styles.css"
         for item in path.rglob('*.md'):
             # 分离文件名和后缀
             path, _ext = os.path.splitext(item._raw_path)
@@ -63,13 +72,17 @@ def content_convert(text, path):
     # 替换md为html
     text = re.sub(f".md", ".html", text)
     # 转换Markdown到HTML
-    html = markdown.markdown(text)
-    # pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
+    body = markdown.markdown(text)
     pattern = r'!\[\[(assets/[^|]+)\|?([A-Z])?\|?(\d+)?\]\]'
 
+    head = f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{Path(path).name}</title>\r\n<link rel=\"stylesheet\" href=\"{css_file}\">\r\n</head>"
+
     # 替换所有匹配的内容
-    html = re.sub(pattern, replace_with_img, html).replace('target="_blank"', '')
-    write_file(html, f"{path}.html")
+    body = "<body>\r\n" + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + "</body>\r\n"
+
+    end = "</html>"
+
+    write_file(head + body + end, f"{path}.html")
 
 # 将HTML保存到文件
 def write_file(text, path):
@@ -121,6 +134,7 @@ def HTML_PATH(path):
 if __name__ == "__main__":
     # 指定目录路径
     path = os.getcwd() + "\\test"
+    css_path = os.getcwd() + "\\src\\styles.css"
     root_folder = Path(path)
     deep_directory(root_folder)
     deep_directory(root_folder, 'html')
