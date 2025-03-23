@@ -53,6 +53,8 @@ def replace_with_img(match):
             img_tag += ' class="align-right"'
     if width:
         img_tag += f' width="{width}"'
+    else:
+        img_tag += f' width="50%"'
     img_tag += '>'
     return img_tag
 
@@ -63,7 +65,7 @@ def content_convert(text, path):
     # 转换Markdown到HTML
     html = markdown.markdown(text)
     # pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
-    pattern = r'!\[\[(assets/[^|]+)\|([A-Z])\|(\d+)\]\]'
+    pattern = r'!\[\[(assets/[^|]+)\|?([A-Z])?\|?(\d+)?\]\]'
 
     # 替换所有匹配的内容
     html = re.sub(pattern, replace_with_img, html).replace('target="_blank"', '')
