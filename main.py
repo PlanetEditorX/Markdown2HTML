@@ -60,7 +60,7 @@ def content_convert(text, path):
     html = markdown.markdown(text)
     pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
     # 替换所有匹配的内容
-    html = re.sub(pattern, replace_with_img, html)
+    html = re.sub(pattern, replace_with_img, html).replace('target="_blank"', '')
     write_file(html, f"{path}.html")
 
 # 将HTML保存到文件
