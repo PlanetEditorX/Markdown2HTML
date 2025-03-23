@@ -14,7 +14,7 @@ def deep_directory(path, _type='md'):
             markdown_text = read_file(item._raw_path)
             content_convert(markdown_text, path)
     else:
-        # 地址转换
+        # 地址转换, 因为需要查找文件是否存在，所以地址转换分离
         for item in path.rglob('*.html'):
             HTML_PATH(item)
 
@@ -26,6 +26,31 @@ def read_file(path):
     except Exception as e:
         print(f"▻ 读取{path}发生异常:", e)
 
+# 查找文件绝对地址
+def find_absolute_path(path):
+    _list = list(root_folder.glob(f"**/{path}"))
+    # 文件存在时替换为绝对地址
+    if _list:
+        return list(root_folder.glob(f"**/{path}"))[0]._raw_path
+    return path
+
+# 替换函数
+def replace_with_img(match):
+    path = match.group(1)  # 图片路径
+    path = find_absolute_path(path)
+    try:
+        optional_part = match.group(3)  # 可选的 |L 或 |R
+    except IndexError:
+        optional_part = ''
+    img_tag = f'<img src="{path}" alt="Image"'
+    if optional_part:
+        # 如果有 |L 或 |R，可以添加对应的 CSS 类
+        if optional_part == '|L':
+            img_tag += ' class="align-left"'
+        elif optional_part == '|R':
+            img_tag += ' class="align-right"'
+    img_tag += '>'
+    return img_tag
 
 # markdown内容转换
 def content_convert(text, path):
@@ -33,6 +58,9 @@ def content_convert(text, path):
     text = re.sub(f".md", ".html", text)
     # 转换Markdown到HTML
     html = markdown.markdown(text)
+    pattern = r'!\[\[(.*?\.(png|jpg|jpeg|gif|bmp))(?:\|L|\|R)?(?:\|\d+)?\]\]'
+    # 替换所有匹配的内容
+    html = re.sub(pattern, replace_with_img, html)
     write_file(html, f"{path}.html")
 
 # 将HTML保存到文件
@@ -48,13 +76,13 @@ def HTML_PATH(path):
     # 读取文件
     html = read_file(path._raw_path)
     # 匹配所有的超链接
-    pattern = r'<a href="([^"]+)">'
+    pattern = r'<a[^>]*\s+href="([^"]+)"'
     matches = re.findall(pattern, html)
     if matches:
         for item in matches:
             name = item.split('#')
-            html_file = list(root_folder.glob(f"**/{name[0]}"))[0]
-            html = html.replace(item, html_file._raw_path)
+            # 文件存在时替换为绝对地址
+            html = html.replace(item, find_absolute_path(name[0]))
     # 锚点
     html = html.replace('#^', '#')
     # 替换UUID为id
