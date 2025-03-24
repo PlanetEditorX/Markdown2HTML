@@ -78,12 +78,35 @@ def content_convert(text, path):
 
     # 有数学公式
     if re.search(r'(.*\$.*\^.*)|(frac)', text):
-        head += "<script id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>\r\n<script>MathJax={ tex: { inlineMath: [['$', '$'], ['\\(', '\\$']] } };</script></head>"
-    else:
-        head += "</head>"
+        head += "<script id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>\r\n<script>MathJax={ tex: { inlineMath: [['$', '$'], ['\\(', '\\$']] } };</script>"
+    # 有Mermaid图表
+    if re.search(r'(mermaid)', text):
+        head += "<script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\r\n<script>mermaid.initialize({startOnLoad: true,theme: 'neutral',securityLevel: 'loose',flowchart: { useMaxWidth: false,htmlLabels: true } });</script>"
+
+    head += "</head>"
 
     # 替换所有匹配的内容
     body = "<body>\r\n" + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + "</body>\r\n"
+
+    if re.search(r'(mermaid)', body):
+        # 找到第一个匹配的```mermaid,并循环替换对应的```mermaid... ```
+        _pattern = r"```mermaid"
+        match = re.search(_pattern, body)
+        while match:
+            # 找到开始位置
+            start_index = match.end()
+            # 替换 ```mermaid 为 <div class="mermaid"> 只替换第一个
+            start = re.sub(r'```mermaid', r'<div class="mermaid">', body[:start_index], count=1)
+            # 找到结束位置
+            match_2 = re.search(r"```", body[start_index:])
+            end_index = start_index + match_2.end()
+            # 替换第一个 ``` 为 </div>
+            end = re.sub(r'```', r'</div>', body[start_index:end_index], count=1)
+            cleaned_text = re.sub(r'<p>|</p>|</div>', '', end)
+            # 确保 Mermaid 代码格式正确
+            end = re.sub(r'--&gt;', '-->', cleaned_text) + "</div>"
+            body = start + end + body[end_index:]
+            match = re.search(_pattern, body)
 
     end = "</html>"
 
@@ -112,7 +135,7 @@ def HTML_PATH(path):
     # 锚点
     html = html.replace('#^', '#')
     # 替换UUID为id
-    html_list = html.split('\n')
+    html_list = [s for s in html.split('\n') if s != ""]
     for i in range(len(html_list)):
         pattern = r"\^.{8}-.{4}-.{4}-.{4}-.{12}"
         match = re.search(pattern, html_list[i])
@@ -133,7 +156,7 @@ def HTML_PATH(path):
                 _match = re.search(r'>', item)
                 _start = _match.start()
                 html_list[i] = item[:_start] + _id + item[_start:]
-    html = ''.join(html_list)
+    html = '\n'.join(html_list)
     write_file(html, path._raw_path)
 
 if __name__ == "__main__":
