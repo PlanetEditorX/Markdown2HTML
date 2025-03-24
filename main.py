@@ -66,6 +66,26 @@ def replace_with_img(match):
     img_tag += '>'
     return img_tag
 
+# Mermaid图表样式
+def mermaid_style(index, uuid):
+    match index % 5:
+        case 0:
+            fill = "e1f5fe"
+            stroke = "2196f3"
+        case 1:
+            fill = "e8f5e9"
+            stroke = "4caf50"
+        case 2:
+            fill = "f3e5f6"
+            stroke = "9c27b0"
+        case 3:
+            fill = "fff8e1"
+            stroke = "ffc107"
+        case 4:
+            fill = "ffebee"
+            stroke = "f44336"
+    return f"style {uuid} fill:#{fill},stroke:#{stroke}"
+
 # markdown内容转换
 def content_convert(text, path):
     # 替换md为html
@@ -103,8 +123,15 @@ def content_convert(text, path):
             # 替换第一个 ``` 为 </div>
             end = re.sub(r'```', r'</div>', body[start_index:end_index], count=1)
             cleaned_text = re.sub(r'<p>|</p>|</div>', '', end)
+            # 颜色处理
+            color_pattern = r'\b[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\b'
+            uuids_list = re.findall(color_pattern, cleaned_text)
+            if uuids_list:
+                line_style = "style emperor fill:#ffd700,stroke:#ffa500,stroke-width:2px"
+                for _item in enumerate(uuids_list):
+                    line_style += "\n" +mermaid_style(_item[0], _item[1])
             # 确保 Mermaid 代码格式正确
-            end = re.sub(r'--&gt;', '-->', cleaned_text) + "</div>"
+            end = re.sub(r'--&gt;', '-->', cleaned_text) + f"{line_style}</div>"
             body = start + end + body[end_index:]
             match = re.search(_pattern, body)
 
