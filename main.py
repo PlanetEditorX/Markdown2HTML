@@ -77,7 +77,7 @@ def content_convert(text, path):
     head = f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{Path(path).name}</title>\r\n<link rel=\"stylesheet\" href=\"{css_file}\">\r\n"
 
     # 有数学公式
-    if "\\frac" in text:
+    if re.search(r'(.*\$.*\^.*)|(frac)', text):
         # 引入渲染脚本,配置行内公式分隔符为 $ 或 $ $
         head += "<script id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>\r\n<script>MathJax={tex: {inlineMath: [['$', '$'], ['\\(', '\$']]}};</script></head>"
     else:
