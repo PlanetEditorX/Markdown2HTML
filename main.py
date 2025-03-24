@@ -14,7 +14,6 @@ def deep_directory(path, _type='md'):
     if _type == 'md':
         for entry in os.scandir(path):
             if entry.is_dir():
-                print(f"[文件夹] {entry.name}")
                 shutil.copy(css_path, entry)
                 css_file = entry.path + "\\styles.css"
         for item in path.rglob('*.md'):
