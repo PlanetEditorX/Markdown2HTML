@@ -62,7 +62,7 @@ def replace_with_img(match):
     if width:
         img_tag += f' width="{width}"'
     else:
-        img_tag += f' width="50%"'
+        img_tag += f'  style="max-width: 80%;"'
     img_tag += '>'
     return img_tag
 
