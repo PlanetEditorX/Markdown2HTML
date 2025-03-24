@@ -174,9 +174,9 @@ def index_page(data, info):
     body_text = ''
     for folder in enumerate(data):
         # 最近序号，去除【数字】
-        body_text += f"<h3>{num_to_seq(1, folder[0]+1)}{re.sub(r'【\d+】', '', folder[1]['father'].name)}</h3>\n"
+        body_text += f"<h3><a href=\"{folder[1]['childrens'][0].path}\">{num_to_seq(1, folder[0]+1)}{re.sub(r'【\d+】', '', folder[1]['father'].name)}</a></h3></h3>\n"
         for child in enumerate(folder[1]['childrens']):
-            body_text += f"<p><a href=\"{child[1].path}\">{num_to_seq(2, child[0]+1)}{child[1].name}</a></p>\n"
+            body_text += f"<p><a href=\"{child[1].path}\">{num_to_seq(2, child[0]+1)}{child[1].name.replace(".html", "")}</a></p>\n"
     body = "<body>\r\n<hr style='border-top-style: dotted !important;'>" + body_text + "</body>\r\n</html>"
     write_file(head + body, f"{info.path}\\index.html")
 
