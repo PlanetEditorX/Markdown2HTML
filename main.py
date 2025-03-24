@@ -13,6 +13,8 @@ tilte_list = [
     ['一、','二、','三、','四、','五、','六、','七、','八、','九、','十、','十一、','十二、','十三、','十四、','十五、','十六、','十七、','十八、','十九、','二十、'],
     ['（一）','（二）','（三）','（四）','（五）','（六）','（七）','（八）','（九）','（十）','（十一）','（十二）','（十三）','（十四）','（十五）','（十六）','（十七）','（十八）','（十九）','（二十）']
 ]
+# 对应目录字典
+menu_dict = {}
 
 # 递归遍历目录树
 def deep_directory(path, _type='init'):
@@ -170,6 +172,7 @@ def index_page(data, info):
         - name: 目录名字
         - path: 目录地址
     """
+    global menu_list
     head = head_chunk(info.name) + "</head>"
     body_text = ''
     for folder in enumerate(data):
@@ -177,6 +180,7 @@ def index_page(data, info):
         body_text += f"<h3><a href=\"{folder[1]['childrens'][0].path}\">{num_to_seq(1, folder[0]+1)}{re.sub(r'【\d+】', '', folder[1]['father'].name)}</a></h3></h3>\n"
         for child in enumerate(folder[1]['childrens']):
             body_text += f"<p><a href=\"{child[1].path}\">{num_to_seq(2, child[0]+1)}{child[1].name.replace(".html", "")}</a></p>\n"
+            menu_dict[child[1].path.replace(".html", "")] = f"{info.path}\\index.html"
     body = "<body>\r\n<hr style='border-top-style: dotted !important;'>" + body_text + "</body>\r\n</html>"
     write_file(head + body, f"{info.path}\\index.html")
 
@@ -186,6 +190,13 @@ def head_chunk(title):
 
 # markdown内容转换
 def content_convert(text, path):
+    # 实际根目录
+    is_root = False
+    if path in menu_dict:
+        is_root = True
+        menu_start = f"<blockquote>\n<p><a href=\"{menu_dict.get(path)}\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{menu_dict.get(path)}\">END</a></p></blockquote>\n"
+
     # 替换md为html
     text = re.sub(f".md", ".html", text)
     # 转换Markdown到HTML
@@ -204,6 +215,8 @@ def content_convert(text, path):
     head += "</head>"
 
     # 替换所有匹配的内容
+    if is_root:
+        body = "<body>\r\n" + menu_start + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + menu_end + "</body>\r\n"
     body = "<body>\r\n" + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + "</body>\r\n"
 
     if re.search(r'(mermaid)', body):

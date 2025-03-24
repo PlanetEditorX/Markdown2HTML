@@ -125,3 +125,10 @@ table {
     white-space: pre-wrap;
     max-width: 250px;
 }
+
+blockquote {
+    margin-left: 0;
+    a {
+        font-size: 1.2rem;
+    }
+}
