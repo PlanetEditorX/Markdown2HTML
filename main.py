@@ -32,17 +32,19 @@ def deep_directory(path, _type='md'):
         for item in path.rglob('*.md'):
             # 分离文件名和后缀
             path, _ext = os.path.splitext(item._raw_path)
+            print(f"转换文件：{path}")
             markdown_text = read_file(item._raw_path)
             content_convert(markdown_text, path)
     elif _type == 'html':
         # 地址转换, 因为需要查找文件是否存在，所以地址转换分离
         for item in path.rglob('*.html'):
+            print(f"校验文件：{item}")
             HTML_PATH(item)
     # 生成目录
     else:
         dir_list = []
         for entry in os.scandir(path):
-            if entry.is_dir():
+            if entry.is_dir() and entry.name not in [".git",".obsidian",".trash"]:
                 if not inline_folder:
                     # 拷贝css样式
                     shutil.copy(css_path, entry)
@@ -60,6 +62,7 @@ def deep_directory(path, _type='md'):
                             # 次级目录
                             for item in os.scandir(folder.path):
                                 if item.name.endswith('html'):
+                                    print(f"找到目录项：{entry.name}\\{folder.name}")
                                     html_list.append(item)
                             # 按拼音排序
                             html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
@@ -72,6 +75,7 @@ def deep_directory(path, _type='md'):
                             is_all_dir = False
                     else:
                         if folder.name.endswith('html'):
+                            print(f"找到目录项：{entry.name}\\{folder.name}")
                             inline_html_list.append(folder)
                             inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
 
@@ -357,6 +361,9 @@ if __name__ == "__main__":
         path = os.getcwd() + "\\test"
     css_path = os.getcwd() + "\\src\\styles.css"
     root_folder = Path(path)
+    print("Markdown转为HTML...")
     deep_directory(root_folder, 'md')
+    print("HTML 链接校验...")
     deep_directory(root_folder, 'html')
+    print("目录生成...")
     deep_directory(root_folder, 'menu')
