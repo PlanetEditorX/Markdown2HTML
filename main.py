@@ -3,19 +3,52 @@ import re
 import shutil
 import markdown
 from pathlib import Path
+from pypinyin import lazy_pinyin
 
 root_folder = '' # 当前目录
 css_path = ''
 css_file = ''
+# 标题列表
+tilte_list = [
+    ['一、','二、','三、','四、','五、','六、','七、','八、','九、','十、','十一、','十二、','十三、','十四、','十五、','十六、','十七、','十八、','十九、','二十、'],
+    ['（一）','（二）','（三）','（四）','（五）','（六）','（七）','（八）','（九）','（十）','（十一）','（十二）','（十三）','（十四）','（十五）','（十六）','（十七）','（十八）','（十九）','（二十）']
+]
 
 # 递归遍历目录树
-def deep_directory(path, _type='md'):
+def deep_directory(path, _type='init'):
     global css_file
-    if _type == 'md':
+    # 初始化生成文件夹总目录
+    if _type == 'init':
         for entry in os.scandir(path):
             if entry.is_dir():
                 shutil.copy(css_path, entry)
+                # 拷贝css样式
                 css_file = entry.path + "\\styles.css"
+                # 是否是全是文件夹的结构
+                is_all_dir = True
+                dir_list = []
+                for folder in os.scandir(entry.path):
+                    # 最外层目录
+                    if folder.is_dir():
+                        html_list = []
+                        # 次级目录
+                        for item in os.scandir(folder.path):
+                            if item.name.endswith('html'):
+                                html_list.append(item)
+                        # 按拼音排序
+                        html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
+                        if html_list:
+                            dir_list.append({
+                                'father': folder,
+                                'childrens': html_list
+                            })
+                    elif folder.name not in ['styles.css', 'index.html']:
+                        is_all_dir = False
+                # 全是文件夹，生成目录页
+                if is_all_dir:
+                    dir_list = sorted(dir_list, key=lambda x: lazy_pinyin(x['father'].name))
+                    index_page(dir_list, entry)
+    elif _type == 'md':
         for item in path.rglob('*.md'):
             # 分离文件名和后缀
             path, _ext = os.path.splitext(item._raw_path)
@@ -86,6 +119,71 @@ def mermaid_style(index, uuid):
             stroke = "f44336"
     return f"style {uuid} fill:#{fill},stroke:#{stroke}"
 
+# 数字转化
+def num_to_seq(level, num):
+    if not isinstance(num, int) or num < 0:
+        return num
+    # 小于20直接从参数中读取数据
+    if num <= 20:
+        return tilte_list[level-1][num-1]
+    match level:
+        case 3:
+            return f"{num}."
+        case 4:
+            return f"({num})"
+
+    units = ['', '十', '百', '千', '万', '十', '百', '千', '亿']
+    chinese_num = {
+        0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
+        5: '五', 6: '六', 7: '七', 8: '八', 9: '九'
+    }
+    result = ''
+    str_num = str(num)
+    length = len(str_num)
+    for i in range(length):
+        n = int(str_num[i])
+        if n != 0:
+            result += chinese_num[n] + units[length - i - 1]
+        else:
+            if not result.endswith('零'):
+                result += '零'
+    # 处理连续的零
+    result = result.replace('零零', '零')
+    # 处理零万、零亿
+    result = result.replace('零万', '万')
+    result = result.replace('零亿', '亿')
+    # 处理最后的零
+    result = result.rstrip('零')
+    match level:
+        case 1:
+            return f"{result}、"
+        case 2:
+            return f"（{result}）"
+    return result
+
+# 目录页
+def index_page(data, info):
+    """
+    生成目录页
+    :param data: 首页网页数据
+    :param info: 目录信息
+        - name: 目录名字
+        - path: 目录地址
+    """
+    head = head_chunk(info.name) + "</head>"
+    body_text = ''
+    for folder in enumerate(data):
+        # 最近序号，去除【数字】
+        body_text += f"<h3>{num_to_seq(1, folder[0]+1)}{re.sub(r'【\d+】', '', folder[1]['father'].name)}</h3>\n"
+        for child in enumerate(folder[1]['childrens']):
+            body_text += f"<p><a href=\"{child[1].path}\">{num_to_seq(2, child[0]+1)}{child[1].name}</a></p>\n"
+    body = "<body>\r\n<hr style='border-top-style: dotted !important;'>" + body_text + "</body>\r\n</html>"
+    write_file(head + body, f"{info.path}\\index.html")
+
+# head片段
+def head_chunk(title):
+    return f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{title}</title>\r\n<link rel=\"stylesheet\" href=\"{css_file}\">\r\n"
+
 # markdown内容转换
 def content_convert(text, path):
     # 替换md为html
@@ -94,7 +192,7 @@ def content_convert(text, path):
     body = markdown.markdown(text)
     pattern = r'!\[\[(assets/[^|]+)\|?([A-Z])?\|?(\d+)?\]\]'
 
-    head = f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{Path(path).name}</title>\r\n<link rel=\"stylesheet\" href=\"{css_file}\">\r\n"
+    head = head_chunk(Path(path).name)
 
     # 有数学公式
     if re.search(r'(.*\$.*\^.*)|(frac)', text):
@@ -191,5 +289,6 @@ if __name__ == "__main__":
     path = os.getcwd() + "\\test"
     css_path = os.getcwd() + "\\src\\styles.css"
     root_folder = Path(path)
-    deep_directory(root_folder)
+    deep_directory(root_folder, 'init')
+    deep_directory(root_folder, 'md')
     deep_directory(root_folder, 'html')
