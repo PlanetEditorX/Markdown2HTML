@@ -68,7 +68,7 @@ def deep_directory(path, _type='md'):
                                     'father': folder,
                                     'childrens': html_list
                                 })
-                        elif folder.name not in ['styles.css', 'index.html']:
+                        elif folder.name not in ['styles.css', 'index.html', '.gitignore']:
                             is_all_dir = False
                     else:
                         if folder.name.endswith('html'):
@@ -229,13 +229,13 @@ def content_convert(text, path):
     # 直接目录当上上级为根目录时
     if inline_folder and ground_father_path._raw_path == root_folder._raw_path:
         is_root = True
-        menu_start = f"<blockquote>\n<p><a href=\"{root_folder._raw_path}\index.html\">首页</a></p></blockquote>\n"
-        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{root_folder._raw_path}\index.html\">END</a></p></blockquote>\n"
+        menu_start = f"<blockquote>\n<p><a href=\"{root_folder._raw_path}\\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{root_folder._raw_path}\\index.html\">END</a></p></blockquote>\n"
     # 多一级目录
     if not inline_folder and ground_father_path.parent._raw_path == root_folder._raw_path:
         is_root = True
-        menu_start = f"<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\index.html\">首页</a></p></blockquote>\n"
-        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\index.html\">END</a></p></blockquote>\n"
+        menu_start = f"<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\\index.html\">END</a></p></blockquote>\n"
         # 拷贝css样式
         shutil.copy(css_path, ground_father_path._raw_path)
         css_file = ground_father_path._raw_path + "\\styles.css"
@@ -341,15 +341,16 @@ def HTML_PATH(path):
     write_file(html, path._raw_path)
 
 if __name__ == "__main__":
+    inline_folder = True
     if len(sys.argv) > 1:
         # 获取命令行参数，手动输入需要转换的目录
         # 参数1：外层地址，该地址下为多个需要转换的文件夹
         # 参数2：0: 外部有一层文件夹 1: 实际所在文件夹
-        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test ---> 外层文件夹，在里面具体目录下生成目录
-        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test\GWY 1 ---> 实际文件夹，直接在该地址下生成目录
+        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test 1 ---> 外层文件夹，在里面具体目录下生成目录
+        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test\GWY---> 实际文件夹，直接在该地址下生成目录
         path = sys.argv[1]
         if len(sys.argv) > 2 and int(sys.argv[2]):
-            inline_folder = True
+            inline_folder = False
     else:
         # 指定目录路径,将需要转为html的目录放在该目录下
         path = os.getcwd() + "\\test"
