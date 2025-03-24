@@ -1,9 +1,11 @@
 import os
 import re
+import sys
 import shutil
 import markdown
 from pathlib import Path
 from pypinyin import lazy_pinyin
+from types import SimpleNamespace
 
 root_folder = '' # 当前目录
 css_path = ''
@@ -15,52 +17,82 @@ tilte_list = [
 ]
 # 对应目录字典
 menu_dict = {}
+# 转换类型
+inline_folder = False
 
 # 递归遍历目录树
-def deep_directory(path, _type='init'):
+def deep_directory(path, _type='md'):
     global css_file
-    # 初始化生成文件夹总目录
-    if _type == 'init':
-        for entry in os.scandir(path):
-            if entry.is_dir():
-                shutil.copy(css_path, entry)
-                # 拷贝css样式
-                css_file = entry.path + "\\styles.css"
-                # 是否是全是文件夹的结构
-                is_all_dir = True
-                dir_list = []
-                for folder in os.scandir(entry.path):
-                    # 最外层目录
-                    if folder.is_dir():
-                        html_list = []
-                        # 次级目录
-                        for item in os.scandir(folder.path):
-                            if item.name.endswith('html'):
-                                html_list.append(item)
-                        # 按拼音排序
-                        html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
-                        if html_list:
-                            dir_list.append({
-                                'father': folder,
-                                'childrens': html_list
-                            })
-                    elif folder.name not in ['styles.css', 'index.html']:
-                        is_all_dir = False
-                # 全是文件夹，生成目录页
-                if is_all_dir:
-                    dir_list = sorted(dir_list, key=lambda x: lazy_pinyin(x['father'].name))
-                    index_page(dir_list, entry)
-    elif _type == 'md':
+    if _type == 'md':
+        # 为直接目录
+        if inline_folder:
+            # 拷贝css样式
+            shutil.copy(css_path, path._raw_path)
+            css_file = path._raw_path + "\\styles.css"
         for item in path.rglob('*.md'):
             # 分离文件名和后缀
             path, _ext = os.path.splitext(item._raw_path)
             markdown_text = read_file(item._raw_path)
             content_convert(markdown_text, path)
-    else:
+    elif _type == 'html':
         # 地址转换, 因为需要查找文件是否存在，所以地址转换分离
         for item in path.rglob('*.html'):
             HTML_PATH(item)
+    # 生成目录
+    else:
+        dir_list = []
+        for entry in os.scandir(path):
+            if entry.is_dir():
+                if not inline_folder:
+                    # 拷贝css样式
+                    shutil.copy(css_path, entry)
+                    css_file = entry.path + "\\styles.css"
+                # 是否是全是文件夹的结构
+                is_all_dir = True
+                if not inline_folder:
+                    dir_list = []
+                inline_html_list = []
+                for folder in os.scandir(entry.path):
+                    if not inline_folder:
+                        html_list = []
+                        # 最外层目录
+                        if folder.is_dir():
+                            # 次级目录
+                            for item in os.scandir(folder.path):
+                                if item.name.endswith('html'):
+                                    html_list.append(item)
+                            # 按拼音排序
+                            html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
+                            if html_list:
+                                dir_list.append({
+                                    'father': folder,
+                                    'childrens': html_list
+                                })
+                        elif folder.name not in ['styles.css', 'index.html']:
+                            is_all_dir = False
+                    else:
+                        if folder.name.endswith('html'):
+                            inline_html_list.append(folder)
+                            inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
 
+                if inline_folder:
+                    dir_list.append({
+                                'father': entry,
+                                'childrens': inline_html_list
+                            })
+
+                if not inline_folder:
+                    # 全是文件夹，生成目录页
+                    dir_list = sorted(dir_list, key=lambda x: lazy_pinyin(x['father'].name))
+                    if is_all_dir and not inline_folder:
+                        index_page(dir_list, entry)
+        # 直接目录
+        if inline_folder:
+            # 将字典转换为 SimpleNamespace 对象
+            index_page(dir_list, SimpleNamespace(**{
+                'name': path.name,
+                'path': path._raw_path
+            }))
 # 打开Markdown文件并读取内容
 def read_file(path):
     try:
@@ -190,12 +222,23 @@ def head_chunk(title):
 
 # markdown内容转换
 def content_convert(text, path):
-    # 实际根目录
+    global css_file
     is_root = False
-    if path in menu_dict:
+    child_path = Path(path)
+    ground_father_path = child_path.parent.parent
+    # 直接目录当上上级为根目录时
+    if inline_folder and ground_father_path._raw_path == root_folder._raw_path:
         is_root = True
-        menu_start = f"<blockquote>\n<p><a href=\"{menu_dict.get(path)}\">首页</a></p></blockquote>\n"
-        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{menu_dict.get(path)}\">END</a></p></blockquote>\n"
+        menu_start = f"<blockquote>\n<p><a href=\"{root_folder._raw_path}\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{root_folder._raw_path}\index.html\">END</a></p></blockquote>\n"
+    # 多一级目录
+    if not inline_folder and ground_father_path.parent._raw_path == root_folder._raw_path:
+        is_root = True
+        menu_start = f"<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\index.html\">END</a></p></blockquote>\n"
+        # 拷贝css样式
+        shutil.copy(css_path, ground_father_path._raw_path)
+        css_file = ground_father_path._raw_path + "\\styles.css"
 
     # 替换md为html
     text = re.sub(f".md", ".html", text)
@@ -298,10 +341,20 @@ def HTML_PATH(path):
     write_file(html, path._raw_path)
 
 if __name__ == "__main__":
-    # 指定目录路径
-    path = os.getcwd() + "\\test"
+    if len(sys.argv) > 1:
+        # 获取命令行参数，手动输入需要转换的目录
+        # 参数1：外层地址，该地址下为多个需要转换的文件夹
+        # 参数2：0: 外部有一层文件夹 1: 实际所在文件夹
+        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test ---> 外层文件夹，在里面具体目录下生成目录
+        #       C:\Users\DearX\Documents\Github\Markdown2HTML\test\GWY 1 ---> 实际文件夹，直接在该地址下生成目录
+        path = sys.argv[1]
+        if len(sys.argv) > 2 and int(sys.argv[2]):
+            inline_folder = True
+    else:
+        # 指定目录路径,将需要转为html的目录放在该目录下
+        path = os.getcwd() + "\\test"
     css_path = os.getcwd() + "\\src\\styles.css"
     root_folder = Path(path)
-    deep_directory(root_folder, 'init')
     deep_directory(root_folder, 'md')
     deep_directory(root_folder, 'html')
+    deep_directory(root_folder, 'menu')
