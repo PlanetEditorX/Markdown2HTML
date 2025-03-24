@@ -12,6 +12,10 @@ body {
 
 h3 {
     font-size: 1.8rem;
+    color: hsl(210, 86%, 39%);
+    a {
+        color: hsl(210, 86%, 39%);
+    }
 }
 h4 {
     font-size: 1.6rem;
@@ -40,6 +44,9 @@ a {
 
 p {
     line-height: 1.6rem;
+    a {
+        color: hsl(207, 77%, 54%);
+    }
 }
 
 /* 分割线样式 */
@@ -54,6 +61,12 @@ blockquote {
 
 /* 表格 */
 table {
+    /* 基础表格样式 */
+    width: 100%;
+    border-collapse: collapse;
+    /* 合并边框 */
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
     tr {
         th,
         td {
@@ -90,11 +103,4 @@ table {
             transition: background 0.3s ease;
         }
     }
-    /* 基础表格样式 */
-    width: 100%;
-    border-collapse: collapse;
-    /* 合并边框 */
-    margin: 20px 0;
-    font-family: Arial,
-    sans-serif;
 }
