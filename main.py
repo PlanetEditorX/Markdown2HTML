@@ -487,7 +487,8 @@ if __name__ == "__main__":
         # 指定目录路径,将需要转为html的目录放在该目录下
         # path = os.getcwd() + "\\test"
         path = os.getcwd()
-    css_path = os.getcwd() + "\\module\\html\\styles.css"
+    # css_path = os.getcwd() + "\\module\\html\\styles.css"
+    css_path = os.getcwd() + "\\styles.css"
     root_folder = Path(path)
     print("Markdown转为HTML...")
     deep_directory(root_folder, 'md')
