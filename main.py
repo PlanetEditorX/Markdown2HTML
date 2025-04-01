@@ -9,7 +9,6 @@ from types import SimpleNamespace
 
 root_folder = '' # 当前目录
 css_path = ''
-css_file = ''
 # 标题列表
 tilte_list = [
     ['一、','二、','三、','四、','五、','六、','七、','八、','九、','十、','十一、','十二、','十三、','十四、','十五、','十六、','十七、','十八、','十九、','二十、'],
@@ -19,27 +18,43 @@ tilte_list = [
 menu_dict = {}
 # 转换类型
 inline_folder = False
+# 单独文件夹，只执行部分操作
+is_single = False
+# 监控传入的根目录
+monitoring_path = ''
 
 # 递归遍历目录树
 def deep_directory(path, _type='md'):
-    global css_file
+    global css_path
     if _type == 'md':
         # 为直接目录
-        if inline_folder:
+        if inline_folder and not is_single:
             # 拷贝css样式
-            shutil.copy(css_path, path._raw_path)
-            css_file = path._raw_path + "\\styles.css"
-        for item in path.rglob('*.md'):
-            # 分离文件名和后缀
-            path, _ext = os.path.splitext(item._raw_path)
-            print(f"转换文件：{path}")
-            markdown_text = read_file(item._raw_path)
-            content_convert(markdown_text, path)
+            shutil.copy(css_path, str(path))
+            css_path = str(path) + "\\styles.css"
+        if is_single:
+            _path, _ext = os.path.splitext(str(path))
+            print(f"转换文件：{_path}")
+            css_path = str(monitoring_path) + "\\styles.css"
+            markdown_text = read_file(str(path))
+            content_convert(markdown_text, _path)
+        else:
+            for item in path.rglob('*.md'):
+                # 分离文件名和后缀
+                path, _ext = os.path.splitext(str(item))
+                print(f"转换文件：{path}")
+                markdown_text = read_file(str(item))
+                content_convert(markdown_text, path)
     elif _type == 'html':
-        # 地址转换, 因为需要查找文件是否存在，所以地址转换分离
-        for item in path.rglob('*.html'):
-            print(f"校验文件：{item}")
-            HTML_PATH(item)
+        if is_single:
+            print(f"校验文件：{path.name}")
+            HTML_PATH(path)
+            print(f"校验完成：{path.name}")
+        else:
+            # 地址转换, 因为需要查找文件是否存在，所以地址转换分离
+            for item in path.rglob('*.html'):
+                print(f"校验文件：{item}")
+                HTML_PATH(item)
     # 生成目录
     else:
         dir_list = []
@@ -48,7 +63,7 @@ def deep_directory(path, _type='md'):
                 if not inline_folder:
                     # 拷贝css样式
                     shutil.copy(css_path, entry)
-                    css_file = entry.path + "\\styles.css"
+                    css_path = entry.path + "\\styles.css"
                 # 是否是全是文件夹的结构
                 is_all_dir = True
                 if not inline_folder:
@@ -76,7 +91,11 @@ def deep_directory(path, _type='md'):
                     else:
                         if folder.name.endswith('html'):
                             print(f"找到目录项：{entry.name}\\{folder.name}")
-                            inline_html_list.append(folder)
+                            add_html = SimpleNamespace(**{
+                                'name': folder.name,
+                                'path': ".\\" + folder.path.replace(str(root_folder), '')
+                            })
+                            inline_html_list.append(add_html)
                             inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
 
                 if inline_folder:
@@ -95,7 +114,7 @@ def deep_directory(path, _type='md'):
             # 将字典转换为 SimpleNamespace 对象
             index_page(dir_list, SimpleNamespace(**{
                 'name': path.name,
-                'path': path._raw_path
+                'path': str(path)
             }))
 # 打开Markdown文件并读取内容
 def read_file(path):
@@ -110,20 +129,23 @@ def find_absolute_path(path):
     _list = list(root_folder.glob(f"**/{path}"))
     # 文件存在时替换为绝对地址
     if _list:
-        return list(root_folder.glob(f"**/{path}"))[0]._raw_path
+        return str(_list[0])
     return path
 
 # 替换图片路径
-def replace_with_img(match):
-    path = match.group(1)  # 图片路径
-    path = find_absolute_path(path)
+def replace_with_img(match, path):
+    img_path = match.group(1)  # 图片路径
+    abs_img_path = find_absolute_path(img_path)
+    rel_path = relative_address(path, abs_img_path)
+    if rel_path:
+        img_path = rel_path
     try:
         align = match.group(2)  # L 或 R
         width = match.group(3)  # 宽度
     except IndexError:
         align = ''
         width = ''
-    img_tag = f'<img src="{path}" alt="Image"'
+    img_tag = f'<img src="{img_path}" alt="Image"'
     if align:
         # 如果有 |L 或 |R，可以添加对应的 CSS 类
         if align == 'L':
@@ -209,7 +231,7 @@ def index_page(data, info):
         - path: 目录地址
     """
     global menu_list
-    head = head_chunk(info.name) + "</head>"
+    head = head_chunk(info.name, "") + "</head>"
     body_text = ''
     for folder in enumerate(data):
         # 最近序号，去除【数字】
@@ -222,37 +244,74 @@ def index_page(data, info):
     write_file(head + body, f"{info.path}\\index.html")
 
 # head片段
-def head_chunk(title):
-    return f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{title}</title>\r\n<link rel=\"stylesheet\" href=\"{css_file}\">\r\n"
+def head_chunk(title, root_path=''):
+    global css_path
+    # nums = 10
+    # while(not os.path.exists(css_path) and nums):
+    #     print(Path(css_path).parent)
+    #     css_path = str(Path(css_path).parent.parent) + "\\styles.css"
+    #     print(f"New CSS File: {css_path}")
+    #     nums -= 1
+    if root_path:
+        css_path = root_path + "styles.css"
+    else:
+        css_path = "styles.css"
+    return f"<!DOCTYPE html>\r\n<html lang=\"zh-CN\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>{title}</title>\r\n<link rel=\"stylesheet\" href=\"{css_path}\">\r\n"
+
+# 地址转换相对地址
+def relative_address(father, child):
+    if not isinstance(father, Path):
+        father = Path(father)
+    if not isinstance(child, Path):
+        child = Path(child)
+    print(father)
+    print(child)
+    result = ''
+    if child.suffix == '.png':
+        result = str(child).replace(str(father), '')
+        if result[0] == '\\':
+            result = result.replace("\\", "", 1)
+    while (child.parent!= father):
+        result += '..\\'
+        child = child.parent
+    return result
 
 # markdown内容转换
 def content_convert(text, path):
-    global css_file
+    global css_path, root_folder
     is_root = False
     child_path = Path(path)
     ground_father_path = child_path.parent.parent
+    menu_path = ''
     # 直接目录当上上级为根目录时
-    if inline_folder and ground_father_path._raw_path == root_folder._raw_path:
+    if inline_folder and str(ground_father_path) == str(root_folder) or (is_single and (str(monitoring_path) == str(ground_father_path) or str(monitoring_path.parent) == str(ground_father_path))):
         is_root = True
-        menu_start = f"<blockquote>\n<p><a href=\"{root_folder._raw_path}\\index.html\">首页</a></p></blockquote>\n"
-        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{root_folder._raw_path}\\index.html\">END</a></p></blockquote>\n"
+        if is_single:
+            if str(monitoring_path) == str(ground_father_path):
+                menu_path = str(monitoring_path)
+            else:
+                menu_path = str(ground_father_path)
+        else:
+            menu_path = str(root_folder)
+        menu_path = relative_address(menu_path, child_path)
+        menu_start = f"<blockquote>\n<p><a href=\"{menu_path}\\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{menu_path}\\index.html\">END</a></p></blockquote>\n"
     # 多一级目录
-    if not inline_folder and ground_father_path.parent._raw_path == root_folder._raw_path:
+    if not inline_folder and str(ground_father_path.parent) == str(root_folder):
         is_root = True
-        menu_start = f"<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\\index.html\">首页</a></p></blockquote>\n"
-        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{ground_father_path._raw_path}\\index.html\">END</a></p></blockquote>\n"
+        menu_start = f"<blockquote>\n<p><a href=\"{str(ground_father_path)}\\index.html\">首页</a></p></blockquote>\n"
+        menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{str(ground_father_path)}\\index.html\">END</a></p></blockquote>\n"
         # 拷贝css样式
-        shutil.copy(css_path, ground_father_path._raw_path)
-        css_file = ground_father_path._raw_path + "\\styles.css"
-
+        shutil.copy(css_path, str(ground_father_path))
+        css_path = str(ground_father_path) + "\\styles.css"
     # 替换md为html
     text = re.sub(f".md", ".html", text)
     # 转换Markdown到HTML
     body = markdown.markdown(text)
     pattern = r'!\[\[(assets/[^|]+)\|?([A-Z])?\|?(\d+)?\]\]'
-
-    head = head_chunk(Path(path).name)
-
+    if not menu_path:
+        menu_path = relative_address(root_folder, path)
+    head = head_chunk(Path(path).name, menu_path)
     # 有数学公式
     if re.search(r'(.*\$.*\^.*)|(frac)', text):
         head += "<script id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>\r\n<script>MathJax={ tex: { inlineMath: [['$', '$'], ['\\(', '\\$']] } };</script>"
@@ -264,8 +323,8 @@ def content_convert(text, path):
 
     # 替换所有匹配的内容
     if is_root:
-        body = "<body>\r\n" + menu_start + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + menu_end + "</body>\r\n"
-    body = "<body>\r\n" + re.sub(pattern, replace_with_img, body).replace('target="_blank"', '') + "</body>\r\n"
+        body = "<body>\r\n" + menu_start + re.sub(pattern, lambda m: replace_with_img(m, Path(path).parent), body).replace('target="_blank"', '') + menu_end + "</body>\r\n"
+    body = "<body>\r\n" + re.sub(pattern, lambda m: replace_with_img(m, Path(path).parent), body).replace('target="_blank"', '') + "</body>\r\n"
 
     if re.search(r'(mermaid)', body):
         # 找到第一个匹配的```mermaid,并循环替换对应的```mermaid... ```
@@ -309,15 +368,41 @@ def write_file(text, path):
 # 地址转换
 def HTML_PATH(path):
     # 读取文件
-    html = read_file(path._raw_path)
+    html = read_file(str(path))
     # 匹配所有的超链接
     pattern = r'<a[^>]*\s+href="([^"]+)"'
     matches = re.findall(pattern, html)
     if matches:
         for item in matches:
+            if item == "..\\":
+                continue
             name = item.split('#')
-            # 文件存在时替换为绝对地址
-            html = html.replace(item, find_absolute_path(name[0]))
+            new_name = ''
+            # 进入子页
+            if 'assets' in name[0]:
+                # 同子页
+                if 'assets' in str(path):
+                    new_path = Path(name[0]).name
+                    html = html.replace(item, new_path)
+            else:
+                # 返回目录
+                if len(name) > 1 and '^' in name[1]:
+                    abs_path = Path(find_absolute_path(name[0]))
+                    # 次级目录，子项
+                    if 'assets' in str(abs_path):
+                        new_path = abs_path.name + name[1]
+                    else:
+                        new_path = '..\\..\\..\\' + name[0]
+                # 返回首页
+                else:
+                    # 文件存在时替换为绝对地址
+                    abs_path = Path(find_absolute_path(name[0]))
+                    if abs_path.name == 'index.html':
+                        new_path = '..\\'
+                    else:
+                        new_path = relative_address(root_folder, abs_path.parent)
+                    new_name = abs_path.name
+                html = html.replace(item, new_path + new_name)
     # 锚点
     html = html.replace('#^', '#')
     # 替换UUID为id
@@ -343,7 +428,49 @@ def HTML_PATH(path):
                 _start = _match.start()
                 html_list[i] = item[:_start] + _id + item[_start:]
     html = '\n'.join(html_list)
-    write_file(html, path._raw_path)
+    write_file(html, str(path))
+
+# 保存监控目录
+def init_path(path):
+    global monitoring_path
+    if path.endswith("\\"):
+        path = path[:-1]
+    monitoring_path = Path(path)
+
+# 清除所有变量
+def clear_all_cariable():
+    global root_folder, css_path, menu_dict, inline_folder, is_single, monitoring_path
+    root_folder = ''
+    css_path = ''
+    menu_dict = {}
+    inline_folder = False
+    is_single = False
+    monitoring_path = ''
+
+# 主函数
+def run(path):
+    global inline_folder, css_path, root_folder, is_single
+    inline_folder = True
+    css_path = os.getcwd() + "\\module\\html\\styles.css"
+    if not os.path.exists(css_path):
+        css_path = "..\\module\\html\\styles.css"
+    root_folder = Path(path)
+    if root_folder.is_dir():
+        print("Markdown转为HTML...")
+        deep_directory(root_folder, 'md')
+        print("HTML 链接校验...")
+        deep_directory(root_folder, 'html')
+        print("目录生成...")
+        deep_directory(root_folder, 'menu')
+    else:
+        # xmind修改触发，传入xmind路径
+        is_single = True
+        print("Markdown转为HTML...")
+        root_folder = Path(path.replace("xmind", "md"))
+        deep_directory(root_folder, 'md')
+        print("HTML 链接校验...")
+        root_folder = Path(path.replace("xmind", "html"))
+        deep_directory(root_folder, 'html')
 
 if __name__ == "__main__":
     inline_folder = True
@@ -358,8 +485,9 @@ if __name__ == "__main__":
             inline_folder = False
     else:
         # 指定目录路径,将需要转为html的目录放在该目录下
-        path = os.getcwd() + "\\test"
-    css_path = os.getcwd() + "\\src\\styles.css"
+        # path = os.getcwd() + "\\test"
+        path = os.getcwd()
+    css_path = os.getcwd() + "\\module\\html\\styles.css"
     root_folder = Path(path)
     print("Markdown转为HTML...")
     deep_directory(root_folder, 'md')
@@ -367,3 +495,4 @@ if __name__ == "__main__":
     deep_directory(root_folder, 'html')
     print("目录生成...")
     deep_directory(root_folder, 'menu')
+    print("Markdown转为HTML操作完成...")
