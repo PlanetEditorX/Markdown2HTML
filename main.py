@@ -95,7 +95,7 @@ def deep_directory(path, _type='md'):
                             print(f"找到目录项：{entry.name}{divide}{folder.name}")
                             add_html = SimpleNamespace(**{
                                 'name': folder.name,
-                                'path': f".{divide}" + folder.path.replace(str(root_folder), '')
+                                'path': "." + folder.path.replace(str(root_folder), '')
                             })
                             inline_html_list.append(add_html)
                             inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
