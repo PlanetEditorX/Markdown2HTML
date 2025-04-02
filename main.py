@@ -60,57 +60,60 @@ def deep_directory(path, _type='md'):
     # 生成目录
     else:
         dir_list = []
-        for entry in os.scandir(path):
-            if entry.is_dir() and entry.name not in [".git",".obsidian",".trash"]:
+        entries = sorted(
+            [entry for entry in os.scandir(path) if entry.is_dir() and entry.name not in [".git",".obsidian",".trash"]],  # 过滤条件
+            key=lambda e: e.name  # 按名称排序
+        )
+        for entry in entries:
+            if not inline_folder:
+                # 拷贝css样式
+                shutil.copy(css_path, entry)
+                css_path = entry.path + f"{divide}styles.css"
+            # 是否是全是文件夹的结构
+            is_all_dir = True
+            if not inline_folder:
+                dir_list = []
+            inline_html_list = []
+            for folder in os.scandir(entry.path):
                 if not inline_folder:
-                    # 拷贝css样式
-                    shutil.copy(css_path, entry)
-                    css_path = entry.path + f"{divide}styles.css"
-                # 是否是全是文件夹的结构
-                is_all_dir = True
-                if not inline_folder:
-                    dir_list = []
-                inline_html_list = []
-                for folder in os.scandir(entry.path):
-                    if not inline_folder:
-                        html_list = []
-                        # 最外层目录
-                        if folder.is_dir():
-                            # 次级目录
-                            for item in os.scandir(folder.path):
-                                if item.name.endswith('html'):
-                                    print(f"找到目录项：{entry.name}{divide}{folder.name}")
-                                    html_list.append(item)
-                            # 按拼音排序
-                            html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
-                            if html_list:
-                                dir_list.append({
-                                    'father': folder,
-                                    'childrens': html_list
-                                })
-                        elif folder.name not in ['styles.css', 'index.html', '.gitignore']:
-                            is_all_dir = False
-                    else:
-                        if folder.name.endswith('html'):
-                            print(f"找到目录项：{entry.name}{divide}{folder.name}")
-                            add_html = SimpleNamespace(**{
-                                'name': folder.name,
-                                'path': f".{divide}" + folder.path.replace(str(root_folder), '')
+                    html_list = []
+                    # 最外层目录
+                    if folder.is_dir():
+                        # 次级目录
+                        for item in os.scandir(folder.path):
+                            if item.name.endswith('html'):
+                                print(f"找到目录项：{entry.name}{divide}{folder.name}")
+                                html_list.append(item)
+                        # 按拼音排序
+                        html_list = sorted(html_list, key=lambda x: lazy_pinyin(x.name))
+                        if html_list:
+                            dir_list.append({
+                                'father': folder,
+                                'childrens': html_list
                             })
-                            inline_html_list.append(add_html)
-                            inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
+                    elif folder.name not in ['styles.css', 'index.html', '.gitignore']:
+                        is_all_dir = False
+                else:
+                    if folder.name.endswith('html'):
+                        print(f"找到目录项：{entry.name}{divide}{folder.name}")
+                        add_html = SimpleNamespace(**{
+                            'name': folder.name,
+                            'path': f".{divide}" + folder.path.replace(str(root_folder), '')
+                        })
+                        inline_html_list.append(add_html)
+                        inline_html_list = sorted(inline_html_list, key=lambda x: lazy_pinyin(x.name))
 
-                if inline_folder:
-                    dir_list.append({
-                                'father': entry,
-                                'childrens': inline_html_list
-                            })
+            if inline_folder:
+                dir_list.append({
+                            'father': entry,
+                            'childrens': inline_html_list
+                        })
 
-                if not inline_folder:
-                    # 全是文件夹，生成目录页
-                    dir_list = sorted(dir_list, key=lambda x: lazy_pinyin(x['father'].name))
-                    if is_all_dir and not inline_folder:
-                        index_page(dir_list, entry)
+            if not inline_folder:
+                # 全是文件夹，生成目录页
+                dir_list = sorted(dir_list, key=lambda x: lazy_pinyin(x['father'].name))
+                if is_all_dir and not inline_folder:
+                    index_page(dir_list, entry)
         # 直接目录
         if inline_folder:
             # 将字典转换为 SimpleNamespace 对象
