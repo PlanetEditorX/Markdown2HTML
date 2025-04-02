@@ -488,7 +488,11 @@ if __name__ == "__main__":
         # path = os.getcwd() + "\\test"
         path = os.getcwd()
     # css_path = os.getcwd() + "\\module\\html\\styles.css"
-    css_path = os.getcwd() + "\\styles.css"
+
+    add_css = "\\styles.css"
+    if sys.platform.startswith('linux'):
+        add_css = "/styles.css"
+    css_path = os.getcwd() + add_css
     root_folder = Path(path)
     print("Markdown转为HTML...")
     deep_directory(root_folder, 'md')
