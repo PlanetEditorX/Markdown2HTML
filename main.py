@@ -61,7 +61,7 @@ def deep_directory(path, _type='md'):
     else:
         dir_list = []
         entries = sorted(
-            [entry for entry in os.scandir(path) if entry.is_dir() and entry.name not in [".git",".obsidian",".trash"]],  # 过滤条件
+            [entry for entry in os.scandir(path) if entry.is_dir() and entry.name not in [".git", ".github",".obsidian",".trash"]],  # 过滤条件
             key=lambda e: e.name  # 按名称排序
         )
         for entry in entries:
