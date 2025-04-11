@@ -263,8 +263,8 @@ def relative_address(father, child):
         father = Path(father)
     if not isinstance(child, Path):
         child = Path(child)
-    print(father)
-    print(child)
+    # print(father)
+    # print(child)
     result = ''
     if child.suffix == '.png':
         result = str(child).replace(str(father), '')
