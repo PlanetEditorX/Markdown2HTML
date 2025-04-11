@@ -407,7 +407,7 @@ def HTML_PATH(path):
                     if abs_path.name == 'index.html':
                         new_path = f'..{divide}'
                     else:
-                        print(f"relative_address-4：root_folder:{root_folder},abs_path:{abs_path},abs_path.parent:{abs_path.parent}")
+                        print(f"relative_address-4：name[0]：{name[0]}，root_folder:{root_folder},abs_path:{abs_path},abs_path.parent:{abs_path.parent}")
                         new_path = relative_address(root_folder, abs_path.parent)
                     new_name = abs_path.name
                 html = html.replace(item, new_path + new_name)
