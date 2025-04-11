@@ -141,7 +141,6 @@ def find_absolute_path(path):
 def replace_with_img(match, path):
     img_path = match.group(1)  # 图片路径
     abs_img_path = find_absolute_path(img_path)
-    print(f"relative_address-1-path:{path},abs_img_path:{abs_img_path}")
     rel_path = relative_address(path, abs_img_path)
     if rel_path:
         img_path = rel_path
@@ -268,7 +267,7 @@ def relative_address(father, child):
     print(f"子文件：{child}")
     if str(child) == ".":
         print('子文件错误')
-        pass
+        return
     result = ''
     if child.suffix == '.png':
         result = str(child).replace(str(father), '')
@@ -301,7 +300,6 @@ def content_convert(text, path):
                 menu_path = str(ground_father_path)
         else:
             menu_path = str(root_folder)
-        print(f"relative_address-2-menu_path:{menu_path},child_path:{child_path}")
         menu_path = relative_address(menu_path, child_path)
         menu_start = f"<blockquote>\n<p><a href=\"{menu_path}index.html\">首页</a></p></blockquote>\n"
         menu_end = f"<hr style='border-top-style: dotted !important;'>\n<blockquote>\n<p><a href=\"{menu_path}index.html\">END</a></p></blockquote>\n"
@@ -319,7 +317,6 @@ def content_convert(text, path):
     body = markdown.markdown(text)
     pattern = r'!\[\[(assets/[^|]+)\|?([A-Z])?\|?(\d+)?\]\]'
     if not menu_path:
-        print(f"relative_address-3-root_folder:{root_folder},path:{path}")
         menu_path = relative_address(root_folder, path)
     head = head_chunk(Path(path).name, menu_path)
     # 有数学公式
@@ -410,7 +407,7 @@ def HTML_PATH(path):
                     if abs_path.name == 'index.html':
                         new_path = f'..{divide}'
                     else:
-                        print(f"relative_address-4-root_folder:{root_folder},abs_path:{abs_path.parent}")
+                        print(f"relative_address-4：root_folder:{root_folder},abs_path:{abs_path},abs_path.parent:{abs_path.parent}")
                         new_path = relative_address(root_folder, abs_path.parent)
                     new_name = abs_path.name
                 html = html.replace(item, new_path + new_name)
