@@ -131,11 +131,14 @@ def read_file(path):
 
 # 查找文件绝对地址
 def find_absolute_path(path):
+    # 将输入路径转换为Path对象
+    target = Path(path)
+    if target.is_absolute():
+        return str(target.resolve())  # 直接返回规范化的绝对路径
+
+    # 递归搜索相对路径
     _list = list(root_folder.glob(f"**/{path}"))
-    # 文件存在时替换为绝对地址
-    if _list:
-        return str(_list[0])
-    return path
+    return str(_list[0].resolve()) if _list else path
 
 # 替换图片路径
 def replace_with_img(match, path):
