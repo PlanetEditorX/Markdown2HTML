@@ -1,0 +1,12 @@
+:root {
+    font-size: 16px;
+    /* 定义根字号（1rem = 16px） */
+}
+
+body {
+    --heading-spacing: calc(var(--p-spacing) * 1.5);
+    margin: auto 10%;
+    font-size: 1rem;
+    /* 继承根字号 */
+    line-height: 1.1rem;
+}

@@ -251,12 +251,6 @@ def index_page(data, info):
 # head片段
 def head_chunk(title, root_path=''):
     global css_path
-    # nums = 10
-    # while(not os.path.exists(css_path) and nums):
-    #     print(Path(css_path).parent)
-    #     css_path = str(Path(css_path).parent.parent) + "\\styles.css"
-    #     print(f"New CSS File: {css_path}")
-    #     nums -= 1
     if root_path:
         css_path = root_path + "styles.css"
     else:
@@ -435,6 +429,59 @@ def HTML_PATH(path):
     html = '\n'.join(html_list)
     write_file(html, str(path))
 
+def merge_css_advanced(file1, file2, output_file, add_comments=True, minify=False):
+    """
+    合并CSS文件（支持注释和压缩）
+    :param file1: css文件路径
+    :param file2: css文件路径
+    :param output_file: 输出文件路径
+    :param add_comments: 是否添加来源注释
+    :param minify: 是否压缩CSS（需安装 csscompressor 库）
+        - name: 目录名字
+        - path: 目录地址
+    """
+    try:
+        # 验证文件存在性
+        for f in [file1, file2]:
+            if not Path(f).exists():
+                raise FileNotFoundError(f"文件不存在: {f}")
+
+        # 读取文件内容
+        css1 = Path(file1).read_text(encoding='utf-8')
+        css2 = Path(file2).read_text(encoding='utf-8')
+
+        # 压缩处理
+        if minify:
+            try:
+                from csscompressor import compress
+                css1 = compress(css1)
+                css2 = compress(css2)
+            except ImportError:
+                print("未安装 csscompressor 库，跳过压缩步骤")
+                minify = False
+
+        # 合并内容
+        merged = []
+        if add_comments:
+            merged.append(f"/* === {os.path.basename(file1)} === */")
+        merged.append(css1)
+
+        if add_comments:
+            merged.append(f"\n/* === {os.path.basename(file2)} === */")
+        else:
+            merged.append("\n")
+        merged.append(css2)
+
+        # 写入文件
+        Path(output_file).write_text('\n'.join(merged), encoding='utf-8')
+
+        print(f"合并成功！文件大小: {os.path.getsize(output_file)} 字节")
+        return True
+
+    except Exception as e:
+        print(f"错误: {str(e)}")
+        return False
+
 # 保存监控目录
 def init_path(path):
     global monitoring_path
@@ -496,7 +543,19 @@ if __name__ == "__main__":
 
     if sys.platform.startswith('linux'):
         divide = '/'
+    css_module_path = os.getcwd() + divide + "module.css"
     css_path = os.getcwd() + divide + "styles.css"
+    # 是否是obsidian
+    obsidian_css = f"{path}{divide}.obsidian{divide}snippets{divide}normal.css"
+    if os.path.exists(obsidian_css):
+        print("存在Obsidian的css样式")
+        merge_css_advanced(
+            obsidian_css,
+            css_module_path,
+            css_path,
+            add_comments=True,
+            minify=False
+        )
     root_folder = Path(path)
     print("Markdown转为HTML...")
     deep_directory(root_folder, 'md')
