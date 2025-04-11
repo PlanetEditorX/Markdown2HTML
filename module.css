@@ -10,3 +10,122 @@ body {
     /* 继承根字号 */
     line-height: 1.1rem;
 }
+
+
+h3 {
+    font-size: 1.8rem;
+    color: hsl(210, 86%, 39%);
+
+    a {
+        color: hsl(210, 86%, 39%);
+    }
+}
+
+h4 {
+    font-size: 1.6rem;
+    color: #08377D;
+    line-height: 2rem;
+    margin: 1.4rem auto;
+}
+
+h5 {
+    font-size: 1.4rem;
+    line-height: 2rem;
+    margin-bottom: 1.5rem;
+    color: #004FA8;
+}
+
+h6 {
+    font-size: 1.2rem;
+    margin: 2rem auto;
+    line-height: 1.8rem;
+    margin: 1.4rem auto;
+}
+
+/* 下划线样式 */
+u {
+    text-underline-offset: 4px;
+    /* 下划线偏移距离 */
+}
+
+ul {
+    line-height: 180%;
+}
+
+a {
+    text-decoration: none;
+    /* 去除下划线 */
+}
+
+p {
+    line-height: 1.6rem;
+
+    a {
+        color: hsl(207, 80%, 40%);
+    }
+}
+
+/* 表格 */
+table {
+    /* 基础表格样式 */
+    width: 100%;
+    border-collapse: collapse;
+    /* 合并边框 */
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
+
+    tr {
+        /* 表头样式 */
+        th {
+            background-color: #f5f5f5;
+            padding: 12px;
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+        }
+
+        /* 单元格样式 */
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* 最后一行去除底部边框 */
+        :last-child td {
+            border-bottom: none;
+        }
+
+        /* 斑马纹效果 */
+        :nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* 悬停高亮 */
+        :hover {
+            background-color: #f1f1f1;
+            transition: background-color 0.3s ease;
+        }
+    }
+}
+
+/* 增强图表容器样式 */
+.mermaid-container {
+    background: #f5f5f5;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+/* 强制横向布局 */
+.mermaid .label {
+    white-space: pre-wrap;
+    max-width: 250px;
+}
+
+blockquote {
+    margin-left: 0;
+
+    a {
+        font-size: 1.2rem;
+    }
+}

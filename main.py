@@ -432,13 +432,11 @@ def HTML_PATH(path):
 def merge_css_advanced(file1, file2, output_file, add_comments=True, minify=False):
     """
     合并CSS文件（支持注释和压缩）
-    :param file1: css文件路径
-    :param file2: css文件路径
+    :param file1: normal片段css文件路径
+    :param file2: 自定义css文件路径
     :param output_file: 输出文件路径
     :param add_comments: 是否添加来源注释
     :param minify: 是否压缩CSS（需安装 csscompressor 库）
-        - name: 目录名字
-        - path: 目录地址
     """
     try:
         # 验证文件存在性
@@ -460,22 +458,22 @@ def merge_css_advanced(file1, file2, output_file, add_comments=True, minify=Fals
                 print("未安装 csscompressor 库，跳过压缩步骤")
                 minify = False
 
-        # 合并内容
+        # # 合并内容
+        files = [(file1, css1), (file2, css2)]  # 扩展文件列表
         merged = []
-        if add_comments:
-            merged.append(f"/* === {os.path.basename(file1)} === */")
-        merged.append(css1)
 
-        if add_comments:
-            merged.append(f"\n/* === {os.path.basename(file2)} === */")
-        else:
-            merged.append("\n")
-        merged.append(css2)
+        for idx, (file, css) in enumerate(files):
+            # 添加分隔符（从第二个文件开始）
+            if idx > 0:
+                merged.append("\n" if not add_comments else f"\n/* === {os.path.basename(file)} === */")
+
+            # 添加CSS内容
+            merged.append(css)
 
         # 写入文件
         Path(output_file).write_text('\n'.join(merged), encoding='utf-8')
 
-        print(f"合并成功！文件大小: {os.path.getsize(output_file)} 字节")
+        print(f"css合并成功！文件大小: {os.path.getsize(output_file)} 字节")
         return True
 
     except Exception as e:
@@ -548,7 +546,7 @@ if __name__ == "__main__":
     # 是否是obsidian
     obsidian_css = f"{path}{divide}.obsidian{divide}snippets{divide}normal.css"
     if os.path.exists(obsidian_css):
-        print("存在Obsidian的css样式")
+        print("找到Obsidian的css样式")
         merge_css_advanced(
             obsidian_css,
             css_module_path,
