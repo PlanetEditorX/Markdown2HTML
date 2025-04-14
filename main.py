@@ -268,9 +268,7 @@ def relative_address(father, child):
         child = Path(child)
     print(f"父目录：{father}")
     print(f"子文件：{child}")
-    if str(child) == ".":
-        print('子文件错误')
-        return
+
     result = ''
     if child.suffix == '.png':
         result = str(child).replace(str(father), '')
@@ -278,11 +276,13 @@ def relative_address(father, child):
             result = result.replace(divide, "", 1)
     while (child.parent!= father):
         print(f"子文件所在目录为：{child.parent}, 不是父目录：{father}")
+        if str(child.parent) == ".":
+            break
         result += f'..{divide}'
         child = child.parent
         print(f"当前相对路径为: {result}")
         print(f"新子文件位置为: {child}")
-    if child.parent == father:
+    if child.parent == father and result:
         print(f"找到相对路径：{result}")
     return result
 
